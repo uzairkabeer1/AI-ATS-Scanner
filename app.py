@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 import streamlit as st
+import toml
 from dotenv import load_dotenv
 import pdfplumber
 import docx
@@ -17,13 +18,24 @@ import google.generativeai as genai
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ————— Load Environment Variables —————
 load_dotenv()
-GENAI_API_KEY = os.getenv("GENAI_API_KEY")
-if not GENAI_API_KEY:
-    st.error("Missing GENAI_API_KEY. Please set it in your .env file.")
+api_key = os.getenv("GENAI_API_KEY")
+
+if not api_key:
+    toml_path = "config.toml"
+    if os.path.exists(toml_path):
+        try:
+            cfg = toml.load(toml_path)
+            api_key = cfg.get("genai", {}).get("api_key")
+        except Exception as e:
+            st.error(f"Error reading {toml_path}: {e}")
+            st.stop()
+
+if not api_key:
+    st.error("Missing GENAI_API_KEY. Please set it in your `.env` or `config.toml` file.")
     st.stop()
-genai.configure(api_key=GENAI_API_KEY)
+
+genai.configure(api_key=api_key)
 
 # ————— Streamlit Page Config —————
 st.set_page_config(
